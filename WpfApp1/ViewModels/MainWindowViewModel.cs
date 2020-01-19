@@ -1,11 +1,7 @@
 ﻿using Reactive.Bindings;
 using System.Reactive.Linq;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Reactive.Bindings.Extensions;
 
 namespace WpfApp1.ViewModels
 {
@@ -19,34 +15,19 @@ namespace WpfApp1.ViewModels
 
         public MainWindowViewModel()
         {
-            SetCurrentCellCommand.Subscribe(_ =>
-            {
-                var flag = false;
-                if(CurrentCell.Value != null)
+            SetCurrentCellCommand.Subscribe(_ => 
+                CurrentCell.Value =  new CellViewModel
                 {
-                    flag = !CurrentCell.Value.IsFirstFlag;
+                    IsFirstFlag = !(CurrentCell.Value?.IsFirstFlag ?? true),
                 }
-                var curCell = new CellViewModel() { IsFirstFlag = flag };
-                CurrentCell.Value = curCell;
-            });
+            );
 
             ClearCurrentCellCommand.Subscribe(_ => CurrentCell.Value = null);
 
-            var testProp = new[]
-{
-                CurrentCell.Select(a => a!=null),
-                CurrentCell.Where(a => a != null).Select(a => a.IsFirstFlag),
-                // CurrentCell.Select(a => a != null && a.IsFirstFlag), ★ こっちだと正しく動作する
-            }.CombineLatestValuesAreAllTrue().ToReactiveProperty();
-            testProp.Subscribe(a => System.Console.WriteLine($"来たよ{a}"));
-
-            TestCommand = new[]
-            {
-                CurrentCell.Select(a => a!=null),
-                CurrentCell.Where(a => a != null).Select(a => a.IsFirstFlag),
-                // CurrentCell.Select(a => a != null && a.IsFirstFlag), ★ こっちだと正しく動作する
-            }.CombineLatestValuesAreAllTrue().ToReactiveCommand();
-            TestCommand.Subscribe(_ => System.Console.WriteLine(CurrentCell.Value.IsFirstFlag));
+            TestCommand = CurrentCell
+                .Select(x => x?.IsFirstFlag ?? false)
+                .ToReactiveCommand();
+            TestCommand.Subscribe(_ => Console.WriteLine(CurrentCell.Value.IsFirstFlag));
         }
         
     }
