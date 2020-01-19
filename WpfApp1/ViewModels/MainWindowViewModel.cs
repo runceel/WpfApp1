@@ -1,34 +1,36 @@
 ﻿using Reactive.Bindings;
 using System.Reactive.Linq;
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Reactive.Bindings.Extensions;
+using Reactive.Bindings.Notifiers;
+using System.Diagnostics;
 
 namespace WpfApp1.ViewModels
 {
     public class MainWindowViewModel : Bases.ViewModelBase
     {
-        public ReactiveProperty<CellViewModel> CurrentCell { get; set; } = new ReactiveProperty<CellViewModel>();
+        public ReadOnlyReactiveProperty<CellViewModel> CurrentCell { get; }
 
-        public ReactiveCommand SetCurrentCellCommand { get; set; } = new ReactiveCommand();
-        public ReactiveCommand ClearCurrentCellCommand { get; set; } = new ReactiveCommand();
-        public ReactiveCommand TestCommand { get; set; }
+        public ReactiveCommand SetCurrentCellCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand ClearCurrentCellCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand TestCommand { get; }
 
         public MainWindowViewModel()
         {
-            SetCurrentCellCommand.Subscribe(_ => 
-                CurrentCell.Value =  new CellViewModel
-                {
-                    IsFirstFlag = !(CurrentCell.Value?.IsFirstFlag ?? true),
-                }
-            );
+            CurrentCell = Observable.Merge(
+                SetCurrentCellCommand
+                    .Select(_ => new CellViewModel { IsFirstFlag = (!CurrentCell.Value?.IsFirstFlag) ?? false }),
+                ClearCurrentCellCommand
+                    .Select(_ => default(CellViewModel))
+            ).ToReadOnlyReactiveProperty();
 
-            ClearCurrentCellCommand.Subscribe(_ => CurrentCell.Value = null);
-
-            TestCommand = CurrentCell
-                .Select(x => x?.IsFirstFlag ?? false)
-                .ToReactiveCommand();
-            TestCommand.Subscribe(_ => Console.WriteLine(CurrentCell.Value.IsFirstFlag));
+            TestCommand = CurrentCell.Select(x => x?.IsFirstFlag ?? false)
+                .ToReactiveCommand()
+                .WithSubscribe(() => Debug.WriteLine(CurrentCell.Value.IsFirstFlag));
         }
-        
     }
 }
